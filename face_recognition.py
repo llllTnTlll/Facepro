@@ -15,8 +15,7 @@ def do_recognition():
     # load our serialized face detector from disk
     print("[INFO] loading face detector...")
     protoPath = os.path.sep.join([cfg_manager.read_cfg('Common', 'detector_path'), "deploy.prototxt"])
-    modelPath = os.path.sep.join(
-        [cfg_manager.read_cfg('Common', 'detector_path'), "res10_300x300_ssd_iter_140000.caffemodel"])
+    modelPath = os.path.sep.join([cfg_manager.read_cfg('Common', 'detector_path'), "res10_300x300_ssd_iter_140000.caffemodel"])
     detector = cv2.dnn.readNetFromCaffe(protoPath, modelPath)
 
     print("[INFO] loading face recognizer...")
