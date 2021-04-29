@@ -17,8 +17,6 @@ def do_embedding():
         Torch嵌入模型：openface_nn4.small2.v1.t7
     >>对读取到的人脸进行编码并写入 embeddings.pickle
     """
-    # 错误标记
-    flag = ''
     # 从磁盘加载detector
     print("\033[1;33m[INFO] loading face detector from \033[4;32m%s\033[0m" % cfg_manager.read_cfg('Common',
                                                                                                    'detector_path'))
@@ -121,3 +119,5 @@ def do_embedding():
         else:
             print("\033[1;31m[ERROR]no face detected\033[0m")
     print("\033[22;32m>>>success\033[0m")
+    flag = ''
+    return flag
