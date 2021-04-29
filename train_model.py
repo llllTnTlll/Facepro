@@ -1,30 +1,25 @@
 from sklearn.preprocessing import LabelEncoder
 from sklearn.svm import SVC
 import pickle_helper
-import pickle
+import cfg_manager
 
 
-# load the face embeddings
-print("[INFO] loading face embeddings...")
-# data = pickle_helper.load_pickle_from_disk(r'./data/embeddings.pickle')
-data = pickle.loads(open(r'C:\Users\ZHIYUAN\PycharmProjects\Facepro\data\embeddings.pickle', "rb").read())
+def do_modeltrain():
+    # 从pickle文件中加载人脸编码文件
+    print("\033[1;33m[INFO] loading face embeddings...\033[0m")
+    data = pickle_helper.load_pickle_from_disk(r'C:\Users\ZHIYUAN\PycharmProjects\Facepro\data\embeddings.pickle')
 
-# encode the labels
-print("[INFO] encoding labels...")
-le = LabelEncoder()
-labels = le.fit_transform(data["names"])
+    # 生成人脸编码对应的标签
+    print("\033[1;33m[INFO] encoding labels...\033[0m")
+    le = LabelEncoder()
+    labels = le.fit_transform(data["names"])
+    # 将标签文件写入硬盘
+    pickle_helper.write_pickle_to_disk(r'C:\Users\ZHIYUAN\PycharmProjects\Facepro\data\le.pickle', le)
 
-# 使用从.pickle文件中加载的编码文件拟合训练支持向量机模型
-# 输出模型与编码文件
-print("[INFO] training model...")
-recognizer = SVC(C=1.0, kernel="linear", probability=True)
-recognizer.fit(data["embeddings"], labels)
-
-f = open(r'C:\Users\ZHIYUAN\PycharmProjects\Facepro\data\recognizer.pickle', "wb")
-f.write(pickle.dumps(recognizer))
-f.close()
-
-# write the label encoder to disk
-f = open(r'C:\Users\ZHIYUAN\PycharmProjects\Facepro\data\le.pickle', "wb")
-f.write(pickle.dumps(le))
-f.close()
+    # 使用从.pickle文件中加载的编码文件拟合训练支持向量机模型
+    # 输出模型与编码文件
+    print("\033[1;33m[INFO] training model...\033[0m")
+    recognizer = SVC(C=float(cfg_manager.read_cfg('FaceEmbeddings', 'confidence')), kernel="linear", probability=True)
+    recognizer.fit(data["embeddings"], labels)
+    # 将训练完成的SVM模型写入硬盘
+    pickle_helper.write_pickle_to_disk(r'C:\Users\ZHIYUAN\PycharmProjects\Facepro\data\recognizer.pickle', recognizer)

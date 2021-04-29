@@ -1,9 +1,10 @@
 import face_embedding
+import train_model
 
 
 def show_menu():
     # 展示菜单
-    print('\033[1;32m========================Function_Menu========================\033[0m')
+    print('\033[1;32m=======================Function_Menu========================\033[0m')
     print('press 1 for : FaceRecognition(SVM)')
     print('press 2 for : LoadNewFace')
     print('press 3 for : Settings')
@@ -31,6 +32,8 @@ def default():
 
 def do_recognition():
     flag = face_embedding.do_embedding()
+    if flag == '':
+        train_model.do_modeltrain()
 
 
 def main():

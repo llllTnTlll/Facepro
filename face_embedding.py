@@ -5,6 +5,7 @@ import pickle
 import cv2
 import os
 import cfg_manager
+import pickle_helper
 
 
 def do_embedding():
@@ -16,10 +17,14 @@ def do_embedding():
         Torch嵌入模型：openface_nn4.small2.v1.t7
     >>对读取到的人脸进行编码并写入 embeddings.pickle
     """
+    # 错误标记
+    flag = ''
     # 从磁盘加载detector
-    print("\033[1;33m[INFO] loading face detector from \033[4;32m%s\033[0m" % cfg_manager.read_cfg('Common', 'detector_path'))
-    protoPath = os.path.sep.join([cfg_manager.read_cfg('Common', 'detector_path'), "deploy.prototx"])
-    modelPath = os.path.sep.join([cfg_manager.read_cfg('Common', 'detector_path'), "res10_300x300_ssd_iter_140000.caffemodel"])
+    print("\033[1;33m[INFO] loading face detector from \033[4;32m%s\033[0m" % cfg_manager.read_cfg('Common',
+                                                                                                   'detector_path'))
+    protoPath = os.path.sep.join([cfg_manager.read_cfg('Common', 'detector_path'), "deploy.prototxt"])
+    modelPath = os.path.sep.join(
+        [cfg_manager.read_cfg('Common', 'detector_path'), "res10_300x300_ssd_iter_140000.caffemodel"])
     try:
         detector = cv2.dnn.readNetFromCaffe(protoPath, modelPath)
     except cv2.error:
@@ -29,30 +34,39 @@ def do_embedding():
         print("  * Confirm that the corresponding model file exists in the specified path")
         flag = 'Detector_Error'
         return flag
-
+    print("\033[22;32m>>>success\033[0m")
     # 从磁盘中加载embedder
-    print("[INFO] loading face recognizer...")
-    embedder = cv2.dnn.readNetFromTorch(cfg_manager.read_cfg('Common', 'embedder_path'))
+    print("\033[1;33m[INFO] loading face recognizer...\033[0m")
+    try:
+        embedder = cv2.dnn.readNetFromTorch(cfg_manager.read_cfg('Common', 'embedder_path'))
+    except cv2.error:
+        # 返回模型加载失败错误
+        print('\033[1;31m[ERROR]load embedder failed\033[0m')
+        print(">>>HELP")
+        print("  * Confirm that the corresponding model file exists in the specified path")
+        flag = 'Embedder_Error'
+        return flag
+    print("\033[22;32m>>>success\033[0m")
 
     # 从face_directory文件夹中读取已有的图片
-    print("[INFO] quantifying faces...")
+    print("\033[1;33m[INFO] quantifying faces...\033[0m")
     imagePaths = list(paths.list_images(cfg_manager.read_cfg('Common', 'face_directory')))
+    print("\033[22;32m>>>success\033[0m")
 
     knownEmbeddings = []
     knownNames = []
 
-    # 照片处理的总数
+    # 遍历face_directory返回图片列表
+    print("\033[1;33m[INFO] encoding faces...\033[0m")
+    print("-------------------------------------")
     total = 0
 
-    # loop over the image paths
     for (i, imagePath) in enumerate(imagePaths):
-        # extract the person name from the image path
         print("[INFO] processing image {}/{}".format(i + 1, len(imagePaths)))
         name = imagePath.split(os.path.sep)[-1]
 
-        # load the image, resize it to have a width of 600 pixels (while
-        # maintaining the aspect ratio), and then grab the image
-        # dimensions
+        # 加载图片，保持纵横比更改宽度维600
+        # 取得标准化后的图像高度与宽度
         image = cv2.imread(imagePath)
         image = imutils.resize(image, width=600)
         (h, w) = image.shape[:2]
@@ -62,52 +76,48 @@ def do_embedding():
             cv2.resize(image, (300, 300)), 1.0, (300, 300),
             (104.0, 177.0, 123.0), swapRB=False, crop=False)
 
-        # apply OpenCV's deep learning-based face detector to localize
-        # faces in the input image
+        # 输入深度学习模型并取得预测结果
         detector.setInput(imageBlob)
         detections = detector.forward()
-        # ensure at least one face was found
+        # 确认检测到人脸
         if len(detections) > 0:
-            # we're making the assumption that each image has only ONE
-            # face, so find the bounding box with the largest probability
+            # 取人脸最大可能性的位置
             i = np.argmax(detections[0, 0, :, 2])
             confidence = detections[0, 0, i, 2]
 
-            # ensure that the detection with the largest probability also
-            # means our minimum probability test (thus helping filter out
-            # weak detections)
+            # 如果置信度大于设定值
             if confidence > float(cfg_manager.read_cfg('FaceEmbeddings', 'confidence')):
-                # compute the (x, y)-coordinates of the bounding box for
-                # the face
-                box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
-                (startX, startY, endX, endY) = box.astype("int")
+                # 取得ROI区域
+                roi = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
+                (startX, startY, endX, endY) = roi.astype("int")
 
-                # extract the face ROI and grab the ROI dimensions
+                # 将ROI区域截出
                 face = image[startY:endY, startX:endX]
                 (fH, fW) = face.shape[:2]
 
-                # ensure the face width and height are sufficiently large
+                # 剔除较小的人脸
                 if fW < 20 or fH < 20:
                     continue
 
-                # construct a blob for the face ROI, then pass the blob
-                # through our face embedding model to obtain the 128-d
+                # 构造blob
+                # 对人脸进行编码
                 # quantification of the face
                 faceBlob = cv2.dnn.blobFromImage(face, 1.0 / 255,
                                                  (96, 96), (0, 0, 0), swapRB=True, crop=False)
                 embedder.setInput(faceBlob)
                 vec = embedder.forward()
 
-                # add the name of the person + corresponding face
-                # embedding to their respective lists
+                # 将姓名写入列表
+                # 编码存储至列表
                 knownNames.append(name)
                 knownEmbeddings.append(vec.flatten())
                 total += 1
 
-            # dump the facial embeddings + names to disk
+            # 将编码写入embeddings.pickle
             print("[INFO] serializing {} encodings...".format(total))
             data = {"embeddings": knownEmbeddings, "names": knownNames}
-            f = open(r'C:\Users\ZHIYUAN\PycharmProjects\Facepro\data\embeddings.pickle', "wb")
-            f.write(pickle.dumps(data))
-            f.close()
-
+            pickle_helper.write_pickle_to_disk(r"C:\Users\ZHIYUAN\PycharmProjects\Facepro\data\embeddings.pickle", data)
+            print("-------------------------------------")
+        else:
+            print("\033[1;31m[ERROR]no face detected\033[0m")
+    print("\033[22;32m>>>success\033[0m")
