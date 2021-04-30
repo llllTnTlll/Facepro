@@ -1,4 +1,4 @@
-import face_embedding
+import face_encoding
 import train_model
 import face_recognition
 
@@ -32,7 +32,7 @@ def default():
 
 
 def do_recognition():
-    flag = face_embedding.do_embedding()
+    flag = face_encoding.do_embedding()
     if flag == '':
         train_model.do_modeltrain()
         face_recognition.do_recognition()
