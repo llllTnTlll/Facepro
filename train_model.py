@@ -13,6 +13,7 @@ def do_modeltrain():
     print("\033[1;33m[INFO] encoding labels...\033[0m")
     le = LabelEncoder()
     labels = le.fit_transform(data["names"])
+    print(labels)
     # 将标签文件写入硬盘
     pickle_helper.write_pickle_to_disk(r'C:\Users\ZHIYUAN\PycharmProjects\Facepro\data\le.pickle', le)
 
@@ -23,3 +24,6 @@ def do_modeltrain():
     recognizer.fit(data["embeddings"], labels)
     # 将训练完成的SVM模型写入硬盘
     pickle_helper.write_pickle_to_disk(r'C:\Users\ZHIYUAN\PycharmProjects\Facepro\data\recognizer.pickle', recognizer)
+
+
+do_modeltrain()

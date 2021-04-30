@@ -89,5 +89,6 @@ def do_recognition():
                 cv2.waitKey(1)
 
 
+do_recognition()
 
 
