@@ -82,9 +82,9 @@ def do_recognition():
                 text = "{}: {:.2f}%".format(name, proba * 100)
                 y = startY - 10 if startY - 10 > 10 else startY + 10
                 cv2.rectangle(image, (startX, startY), (endX, endY),
-                              (0, 0, 255), 2)
+                              (0, 255, 0), 2)
                 cv2.putText(image, text, (startX, y),
-                            cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 0, 255), 2)
+                            cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 0), 2)
                 cv2.imshow('', image)
                 cv2.waitKey(1)
 

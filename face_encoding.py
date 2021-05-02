@@ -1,7 +1,7 @@
 from imutils import paths
 import numpy as np
 import imutils
-import pickle
+import face_alignment
 import cv2
 import os
 import cfg_manager
@@ -21,8 +21,7 @@ def do_embedding():
     print("\033[1;33m[INFO] loading face detector from \033[4;32m%s\033[0m" % cfg_manager.read_cfg('Common',
                                                                                                    'detector_path'))
     protoPath = os.path.sep.join([cfg_manager.read_cfg('Common', 'detector_path'), "deploy.prototxt"])
-    modelPath = os.path.sep.join(
-        [cfg_manager.read_cfg('Common', 'detector_path'), "res10_300x300_ssd_iter_140000.caffemodel"])
+    modelPath = os.path.sep.join([cfg_manager.read_cfg('Common', 'detector_path'), "res10_300x300_ssd_iter_140000.caffemodel"])
     try:
         detector = cv2.dnn.readNetFromCaffe(protoPath, modelPath)
     except cv2.error:
@@ -73,7 +72,7 @@ def do_embedding():
             image = imutils.resize(image, width=600)
             (h, w) = image.shape[:2]
 
-            # construct a blob from the image
+            # 对整张图片构建blob
             imageBlob = cv2.dnn.blobFromImage(
                 cv2.resize(image, (300, 300)), 1.0, (300, 300),
                 (104.0, 177.0, 123.0), swapRB=False, crop=False)
@@ -92,6 +91,7 @@ def do_embedding():
                     # 取得ROI区域
                     roi = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
                     (startX, startY, endX, endY) = roi.astype("int")
+                    intROI = [startX, startY, endX, endY]
 
                     # 将ROI区域截出
                     face = image[startY:endY, startX:endX]
@@ -101,9 +101,11 @@ def do_embedding():
                     if fW < 20 or fH < 20:
                         continue
 
+                    # 进行人脸对齐
+                    face_alignment.do_alignment(image=face)
+
                     # 构造blob
                     # 对人脸进行编码
-                    # quantification of the face
                     faceBlob = cv2.dnn.blobFromImage(face, 1.0 / 255,
                                                      (96, 96), (0, 0, 0), swapRB=True, crop=False)
                     embedder.setInput(faceBlob)
