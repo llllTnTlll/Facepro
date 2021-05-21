@@ -25,5 +25,3 @@ def do_modeltrain():
     # 将训练完成的SVM模型写入硬盘
     pickle_helper.write_pickle_to_disk(r'C:\Users\ZHIYUAN\PycharmProjects\Facepro\data\recognizer.pickle', recognizer)
 
-
-do_modeltrain()

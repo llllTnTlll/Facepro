@@ -89,6 +89,6 @@ def do_recognition():
                 cv2.waitKey(1)
 
 
-do_recognition()
-
+if __name__ == '__main__':
+    do_recognition()
 

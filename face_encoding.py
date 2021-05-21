@@ -88,6 +88,7 @@ def do_embedding():
 
                 # 如果置信度大于设定值
                 if confidence > float(cfg_manager.read_cfg('FaceEmbeddings', 'confidence')):
+
                     # 取得ROI区域
                     roi = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
                     (startX, startY, endX, endY) = roi.astype("int")
@@ -100,9 +101,6 @@ def do_embedding():
                     # 剔除较小的人脸
                     if fW < 20 or fH < 20:
                         continue
-
-                    # 进行人脸对齐
-                    face_alignment.do_alignment(image=face)
 
                     # 构造blob
                     # 对人脸进行编码
@@ -124,7 +122,5 @@ def do_embedding():
                 print("-------------------------------------")
             else:
                 print("\033[1;31m[ERROR]no face detected\033[0m")
-    print(knownNames)
 
 
-do_embedding()

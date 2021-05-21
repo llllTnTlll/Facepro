@@ -18,7 +18,7 @@ def function_choose(num):
     # 功能选择
     numbers = {
         '1': do_recognition,
-
+        '2': do_load,
     }
 
     numbers.get(num, default)()
@@ -32,10 +32,16 @@ def default():
 
 
 def do_recognition():
+    # 开启人脸识别
     flag = face_encoding.do_embedding()
     if flag == '':
         train_model.do_modeltrain()
         face_recognition.do_recognition()
+
+
+def do_load():
+    # 向字典添加新的人脸
+    print("do_load")
 
 
 def main():
