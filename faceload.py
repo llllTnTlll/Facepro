@@ -8,8 +8,11 @@ import time
 import pickle_helper
 import copy
 
-thread_flag = False
+pressed_key = None     # 监视键盘输入
+thread_flag = False    # 在未检测到人脸是不进行人脸编码
 face_box = None
+camera_shot = None
+lock = threading.Lock()
 
 
 def camera_tracking():
@@ -61,6 +64,7 @@ def camera_tracking():
             confidence = detections[0, 0, i, 2]
             global thread_flag
 
+            lock.acquire()
             if confidence > 0.4:
                 thread_flag = True
                 box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
@@ -68,33 +72,54 @@ def camera_tracking():
                 (startX, startY, endX, endY) = intbox
                 global face_box
                 face_box = intbox
+                global camera_shot
+                camera_shot = image.copy()
                 cv2.rectangle(image, (startX, startY), (endX, endY),
                               (0, 255, 0), 2)
             else:
                 thread_flag = False
-
+            lock.release()
         cv2.imshow('', image)
         cv2.waitKey(1)
 
 
 def do_encoding():
+    lock.acquire()
     print(face_box)
+    if camera_shot is None:
+        return
+    lock.release()
+    cv2.imshow('camera_shot', camera_shot)
+    cv2.waitKey(1)
 
 
-class myThread(threading.Thread):
+#
+class encodingThread(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
 
     def run(self):
-        print("thread start")
+        print("encoding thread start")
         while 1:
             global thread_flag
             if thread_flag is True:
                 do_encoding()
+                print(pressed_key)
                 time.sleep(1)
 
 
+class cameraThread(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
+
+    def run(self):
+        print("camera thread start")
+        while 1:
+            camera_tracking()
+
+
 if __name__ == '__main__':
-    thread = myThread()
-    thread.start()
-    camera_tracking()
+    thread1 = encodingThread()
+    thread2 = cameraThread()
+    thread1.start()
+    thread2.start()
