@@ -12,7 +12,7 @@ def do_recognition():
     parent_directory = os.getcwd()
     # 获取存储人脸检测器的face_detection_model路径
     detector_path = os.path.sep.join([parent_directory, cfg_manager.read_cfg('Common', 'detector_path')])
-    # load our serialized face detector from disk
+    # load detector from disk
     print("[INFO] loading face detector...")
     protoPath = os.path.sep.join([cfg_manager.read_cfg('Common', 'detector_path'), "deploy.prototxt"])
     modelPath = os.path.sep.join([cfg_manager.read_cfg('Common', 'detector_path'), "res10_300x300_ssd_iter_140000.caffemodel"])
@@ -28,6 +28,7 @@ def do_recognition():
     # 读取SVM模型及对应编码文件
     recognizer = pickle.loads(open(r'./data/recognizer.pickle', "rb").read())
     le = pickle.loads(open(r'./data/le.pickle', "rb").read())
+
     # 从摄像头获取图像
     # 转换每张图的宽度为600，保持其纵横比并读取高度
     capture = cv2.VideoCapture(0, cv2.CAP_DSHOW)
@@ -46,18 +47,16 @@ def do_recognition():
 
         # 提取人脸ROI
         for i in range(0, detections.shape[2]):
-            # extract the confidence (i.e., probability) associated with the
-            # prediction
+            # 取得置信度
             confidence = detections[0, 0, i, 2]
 
-            # filter out weak detections
+            # 根据置信度筛选是否存在人脸
             if confidence > 0.4:
-                # compute the (x, y)-coordinates of the bounding box for the
-                # face
+                # 取得最高置信度对应的box区域
                 box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
                 (startX, startY, endX, endY) = box.astype("int")
 
-                # extract the face ROI
+                # 框出ROI区域
                 face = image[startY:endY, startX:endX]
                 (fH, fW) = face.shape[:2]
 
@@ -76,9 +75,7 @@ def do_recognition():
                 j = np.argmax(preds)
                 proba = preds[j]
                 name = le.classes_[j]
-
-                # draw the bounding box of the face along with the associated
-                # probability
+                # 绘制box
                 text = "{}: {:.2f}%".format(name, proba * 100)
                 y = startY - 10 if startY - 10 > 10 else startY + 10
                 cv2.rectangle(image, (startX, startY), (endX, endY),
