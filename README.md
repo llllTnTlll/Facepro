@@ -41,4 +41,4 @@ data文件夹用于在本地保存编码和标签文件以及已拟合的分类�
 ### 使用支持向量机
 因为项目使用了SVM这种二分类算法，**请在第一次运行前，确保pickle文件中具有两个或两个以上的人脸编码文件，或是facedirectory中存在两个以上包含图片的人脸文件夹。** 这样程序才能正常构建lable标签文件，否则会产生 'classes must be greater than one' 错误。
 ## 1.3 以上
-**have fun**
+ **Have Fun**
