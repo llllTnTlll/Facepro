@@ -5,13 +5,14 @@ import imutils
 import np
 import threading
 import time
-import pickle_helper
-import copy
+from pynput.keyboard import Listener
 
 pressed_key = None     # 监视键盘输入
 thread_flag = False    # 在未检测到人脸是不进行人脸编码
 face_box = None
 camera_shot = None
+capture_role = 'no_role'
+pic_num = 0
 lock = threading.Lock()
 
 
@@ -46,6 +47,7 @@ def camera_tracking():
     print("\033[22;32m>>>success\033[0m")
 
     capture = cv2.VideoCapture(0)
+
     while 1:
         ret, frame = capture.read()
         if ret is False:
@@ -79,6 +81,7 @@ def camera_tracking():
             else:
                 thread_flag = False
             lock.release()
+        cv2.putText(image, 'captured:' + str(pic_num), (0, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
         cv2.imshow('', image)
         cv2.waitKey(1)
 
@@ -90,6 +93,8 @@ def do_encoding():
         return
     lock.release()
     cv2.imshow('camera_shot', camera_shot)
+    global pic_num
+    pic_num += 1
     cv2.waitKey(1)
 
 
@@ -118,8 +123,25 @@ class cameraThread(threading.Thread):
             camera_tracking()
 
 
+class keyboardThread(threading.Thread):
+    def __init__(self):
+        threading.Thread.__init__(self)
+
+    def run(self):
+        with Listener(press) as listener:
+            listener.join()
+
+
+def press(key):
+    global pressed_key
+    pressed_key = key
+
+
 if __name__ == '__main__':
+
     thread1 = encodingThread()
     thread2 = cameraThread()
+    thread3 = keyboardThread()
     thread1.start()
     thread2.start()
+    thread3.start()
