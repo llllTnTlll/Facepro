@@ -47,9 +47,11 @@ def do_recognition():
 def do_load():
     # 向字典添加新的人脸
     name = input('\033[4;33menter your name first :\033[0m')
+    # 判定人脸画像是否已存在
     isExists = os.path.exists('./face_directory/%s' % name)
     thread1 = faceload.encodingThread(isexists=isExists)
     thread1.start()
+    thread1.join()
     main()
 
 

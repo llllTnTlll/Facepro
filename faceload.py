@@ -5,11 +5,11 @@ import imutils
 import np
 import threading
 import time
-import matplotlib.image as mp
 from pynput.keyboard import Listener
 
 pressed_key = None     # 监视键盘输入
 thread_flag = False    # 在未检测到人脸是不进行人脸编码
+run_flag = True        # 线程全局运行标志
 face_box = None        # 检测到的人脸位置
 camera_shot = None
 capture_role = 'no_role'
@@ -47,9 +47,8 @@ def camera_tracking():
         return flag
     print("\033[22;32m>>>success\033[0m")
 
-    capture = cv2.VideoCapture(0)
-
-    while 1:
+    capture = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+    while run_flag:
         ret, frame = capture.read()
         if ret is False:
             break
@@ -82,28 +81,31 @@ def camera_tracking():
                 thread_flag = False
             lock.release()
         cv2.putText(image, 'captured:' + str(pic_num), (0, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
-        cv2.imshow('', image)
+        cv2.imshow('camera', image)
         cv2.waitKey(1)
+    capture.release()
+    cv2.destroyAllWindows()
 
 
 def do_encoding():
     lock.acquire()
     print(face_box)
+    global camera_shot
     if camera_shot is None:
         return
     lock.release()
     cv2.imshow('camera_shot', camera_shot)
     global pic_num
     # 若按下的按钮为s
-    # 将照片输入暂存区等待编码
     if pressed_key == 's':
         cv2.imwrite("./data/picSave/photo_{}.jpg".format(pic_num), camera_shot)    # 暂存到缓存区
         pic_num += 1    # 已捕获照片数量+1
+        print(camera_shot)
     elif pressed_key == 'p':
         return
     elif pressed_key == 'q':
-        # 触发事件，终止线程
-        pass
+        global run_flag
+        run_flag = False
     cv2.waitKey(1)
 
 
@@ -111,6 +113,8 @@ class encodingThread(threading.Thread):
     def __init__(self, isexists):
         threading.Thread.__init__(self)
         self.isExists = isexists
+        global run_flag
+        run_flag = True
 
     def run(self):
         print("encoding thread start")
@@ -121,15 +125,18 @@ class encodingThread(threading.Thread):
             thread3 = keyboardThread()
             thread2.start()
             thread3.start()
-            while 1:
+            global run_flag
+            while run_flag:
                 global thread_flag
                 if thread_flag is True:
-                    do_encoding()
-                    print(pressed_key)
-                    time.sleep(1)
-
-    def stop(self):
-        self.stop()
+                    if pressed_key != 'q':
+                        do_encoding()
+                        print(pressed_key)
+                        time.sleep(1)
+                    else:
+                        # 使用全局标识结束所有相关线程
+                        run_flag = False
+            cv2.destroyAllWindows()
 
 
 class cameraThread(threading.Thread):
@@ -138,11 +145,7 @@ class cameraThread(threading.Thread):
 
     def run(self):
         print("camera thread start")
-        while 1:
-            camera_tracking()
-
-    def stop(self):
-        self.stop()
+        camera_tracking()
 
 
 class keyboardThread(threading.Thread):
@@ -152,9 +155,9 @@ class keyboardThread(threading.Thread):
     def run(self):
         with Listener(press) as listener:
             listener.join()
-
-    def stop(self):
-        self.stop()
+        while run_flag:
+            return
+        listener.stop()
 
 
 def press(key):
