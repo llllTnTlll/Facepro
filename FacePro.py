@@ -1,6 +1,8 @@
 import face_encoding
 import train_model
 import face_recognition
+import cfg_manager
+import sys
 
 
 def show_menu():
@@ -22,6 +24,7 @@ def function_choose(num):
         '2': do_load,
         '3': do_train,
         '4': do_settings,
+        '5': do_exit(),
     }
 
     numbers.get(num, default)()
@@ -42,6 +45,7 @@ def do_recognition():
 def do_load():
     # 向字典添加新的人脸
     print("do_load")
+    main()
 
 
 def do_train():
@@ -51,6 +55,25 @@ def do_train():
         train_model.do_modeltrain()
     # 返回功能选择
     show_menu()
+
+
+def do_settings():
+    print('\033[1;32m=======================Setting_Menu========================\033[0m')
+    print('press 1 for : ShowSettingTree')
+    print('press 2 for : ChangeSettings')
+    print('press 3 for : BackUp')
+    key = input('\033[4;33minput num then press enter :\033[0m')
+    if key == '1':
+        cfg_manager.show_cfgtree()
+    elif key == '2':
+        cfg_manager.change_cfg()
+    elif key == '3':
+        main()
+    do_settings()
+
+
+def do_exit():
+    sys.exit()
 
 
 def main():

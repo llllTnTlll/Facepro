@@ -94,7 +94,10 @@ def do_encoding():
     lock.release()
     cv2.imshow('camera_shot', camera_shot)
     global pic_num
-    pic_num += 1
+    if pressed_key == 's':
+        pic_num += 1
+    elif pressed_key == 'q':
+        return
     cv2.waitKey(1)
 
 
