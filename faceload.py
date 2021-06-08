@@ -94,14 +94,16 @@ def do_encoding():
     lock.release()
     cv2.imshow('camera_shot', camera_shot)
     global pic_num
+    # 若按下的按钮为s
+    # 将照片输入暂存区等待编码
     if pressed_key == 's':
-        pic_num += 1
+        pic_num += 1    # 已捕获照片数量+1
+
     elif pressed_key == 'q':
         return
     cv2.waitKey(1)
 
 
-#
 class encodingThread(threading.Thread):
     def __init__(self):
         threading.Thread.__init__(self)
@@ -115,6 +117,9 @@ class encodingThread(threading.Thread):
                 print(pressed_key)
                 time.sleep(1)
 
+    def stop(self):
+        self.stop()
+
 
 class cameraThread(threading.Thread):
     def __init__(self):
@@ -125,6 +130,9 @@ class cameraThread(threading.Thread):
         while 1:
             camera_tracking()
 
+    def stop(self):
+        self.stop()
+
 
 class keyboardThread(threading.Thread):
     def __init__(self):
@@ -134,14 +142,19 @@ class keyboardThread(threading.Thread):
         with Listener(press) as listener:
             listener.join()
 
+    def stop(self):
+        self.stop()
+
 
 def press(key):
     global pressed_key
-    pressed_key = key
+    try:
+        pressed_key = key.char
+    except AttributeError:
+        return
 
 
 if __name__ == '__main__':
-
     thread1 = encodingThread()
     thread2 = cameraThread()
     thread3 = keyboardThread()

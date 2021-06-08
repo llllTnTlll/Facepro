@@ -120,7 +120,7 @@ def do_embedding():
                 # 将编码写入embeddings.pickle
                 print("[INFO] serializing {} encodings...".format(total))
                 data = {"embeddings": knownEmbeddings, "names": knownNames}
-                pickle_helper.write_pickle_to_disk(r"C:\Users\ZHIYUAN\PycharmProjects\Facepro\data\embeddings.pickle", data)
+                pickle_helper.write_pickle_to_disk(r"C:\Users\ZHIYUAN\PycharmProjects\Facepro\data\pickleHere\embeddings.pickle", data)
                 print("-------------------------------------")
             else:
                 print("\033[1;31m[ERROR]no face detected\033[0m")

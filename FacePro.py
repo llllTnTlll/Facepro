@@ -24,7 +24,6 @@ def function_choose(num):
         '2': do_load,
         '3': do_train,
         '4': do_settings,
-        '5': do_exit(),
     }
 
     numbers.get(num, default)()
@@ -40,6 +39,7 @@ def default():
 def do_recognition():
     # 启动人脸识别
     face_recognition.do_recognition()
+    main()
 
 
 def do_load():
@@ -54,7 +54,7 @@ def do_train():
     if flag == '':
         train_model.do_modeltrain()
     # 返回功能选择
-    show_menu()
+    main()
 
 
 def do_settings():
@@ -70,10 +70,6 @@ def do_settings():
     elif key == '3':
         main()
     do_settings()
-
-
-def do_exit():
-    sys.exit()
 
 
 def main():

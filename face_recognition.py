@@ -26,8 +26,8 @@ def do_recognition():
     embedder = cv2.dnn.readNetFromTorch(cfg_manager.read_cfg('Common', 'embedder_path'))
 
     # 读取SVM模型及对应编码文件
-    recognizer = pickle.loads(open(r'./data/recognizer.pickle', "rb").read())
-    le = pickle.loads(open(r'./data/le.pickle', "rb").read())
+    recognizer = pickle.loads(open(r'./data/pickleHere/recognizer.pickle', "rb").read())
+    le = pickle.loads(open(r'./data/pickleHere/le.pickle', "rb").read())
 
     # 从摄像头获取图像
     # 转换每张图的宽度为600，保持其纵横比并读取高度
