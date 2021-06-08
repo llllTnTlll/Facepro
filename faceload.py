@@ -5,11 +5,12 @@ import imutils
 import np
 import threading
 import time
+import matplotlib.image as mp
 from pynput.keyboard import Listener
 
 pressed_key = None     # 监视键盘输入
 thread_flag = False    # 在未检测到人脸是不进行人脸编码
-face_box = None
+face_box = None        # 检测到的人脸位置
 camera_shot = None
 capture_role = 'no_role'
 pic_num = 0
@@ -76,8 +77,7 @@ def camera_tracking():
                 face_box = intbox
                 global camera_shot
                 camera_shot = image.copy()
-                cv2.rectangle(image, (startX, startY), (endX, endY),
-                              (0, 255, 0), 2)
+                cv2.rectangle(image, (startX, startY), (endX, endY),(0, 255, 0), 2)
             else:
                 thread_flag = False
             lock.release()
@@ -97,25 +97,36 @@ def do_encoding():
     # 若按下的按钮为s
     # 将照片输入暂存区等待编码
     if pressed_key == 's':
+        cv2.imwrite("./data/picSave/photo_{}.jpg".format(pic_num), camera_shot)    # 暂存到缓存区
         pic_num += 1    # 已捕获照片数量+1
-
-    elif pressed_key == 'q':
+    elif pressed_key == 'p':
         return
+    elif pressed_key == 'q':
+        # 触发事件，终止线程
+        pass
     cv2.waitKey(1)
 
 
 class encodingThread(threading.Thread):
-    def __init__(self):
+    def __init__(self, isexists):
         threading.Thread.__init__(self)
+        self.isExists = isexists
 
     def run(self):
         print("encoding thread start")
-        while 1:
-            global thread_flag
-            if thread_flag is True:
-                do_encoding()
-                print(pressed_key)
-                time.sleep(1)
+        if self.isExists:
+            print('this name is already exists')
+        else:
+            thread2 = cameraThread()
+            thread3 = keyboardThread()
+            thread2.start()
+            thread3.start()
+            while 1:
+                global thread_flag
+                if thread_flag is True:
+                    do_encoding()
+                    print(pressed_key)
+                    time.sleep(1)
 
     def stop(self):
         self.stop()
@@ -153,11 +164,3 @@ def press(key):
     except AttributeError:
         return
 
-
-if __name__ == '__main__':
-    thread1 = encodingThread()
-    thread2 = cameraThread()
-    thread3 = keyboardThread()
-    thread1.start()
-    thread2.start()
-    thread3.start()
