@@ -11,9 +11,9 @@ pressed_key = None     # 监视键盘输入
 thread_flag = False    # 在未检测到人脸是不进行人脸编码
 run_flag = True        # 线程全局运行标志
 face_box = None        # 检测到的人脸位置
-camera_shot = None
-capture_role = 'no_role'
-pic_num = 0
+camera_shot = None     # 浅度复制capture捕获内容用于人脸编码
+pic_num = 0            # 记录共有多少张照片被捕获
+capture_role = 'no_role'    # 捕获规则
 lock = threading.Lock()
 
 
@@ -86,7 +86,7 @@ def camera_tracking():
     capture.release()
 
 
-def do_encoding():
+def do_encoding(name):
     lock.acquire()
     print(face_box)
     global camera_shot
@@ -97,9 +97,11 @@ def do_encoding():
     global pic_num
     # 若按下的按钮为s
     if pressed_key == 's':
-        cv2.imwrite("./data/picSave/photo_{}.jpg".format(pic_num), camera_shot)    # 暂存到缓存区
+        pic_name = time.strftime("%Y%m%d_%H_%M_%S.jpg", time.localtime())
+        print(pic_name)
+        cv2.imwrite("./face_directory/%s/%s" % (name, pic_name), camera_shot)    # 暂存到缓存区
         pic_num += 1    # 已捕获照片数量+1
-        print(camera_shot)
+
     elif pressed_key == 'p':
         return
     elif pressed_key == 'q':
@@ -109,9 +111,11 @@ def do_encoding():
 
 
 class encodingThread(threading.Thread):
-    def __init__(self, isexists):
+    # 编码线程
+    def __init__(self, isexists, name):
         threading.Thread.__init__(self)
         self.isExists = isexists
+        self.name = name
         global run_flag
         run_flag = True
 
@@ -120,6 +124,7 @@ class encodingThread(threading.Thread):
         if self.isExists:
             print('this name is already exists')
         else:
+            os.makedirs(".\\face_directory\\%s" % self.name)
             thread2 = cameraThread()
             thread3 = keyboardThread()
             thread2.start()
@@ -129,7 +134,7 @@ class encodingThread(threading.Thread):
                 global thread_flag
                 if thread_flag is True:
                     if pressed_key != 'q':
-                        do_encoding()
+                        do_encoding(self.name)
                         print(pressed_key)
                         time.sleep(1)
                     else:
@@ -139,6 +144,7 @@ class encodingThread(threading.Thread):
 
 
 class cameraThread(threading.Thread):
+    # 摄像头捕获线程
     def __init__(self):
         threading.Thread.__init__(self)
 
@@ -148,6 +154,7 @@ class cameraThread(threading.Thread):
 
 
 class keyboardThread(threading.Thread):
+    # 键盘监听线程
     def __init__(self):
         threading.Thread.__init__(self)
 

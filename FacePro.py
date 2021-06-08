@@ -26,6 +26,7 @@ def function_choose(num):
         '2': do_load,
         '3': do_train,
         '4': do_settings,
+        '5': do_exit,
     }
 
     numbers.get(num, default)()
@@ -49,7 +50,7 @@ def do_load():
     name = input('\033[4;33menter your name first :\033[0m')
     # 判定人脸画像是否已存在
     isExists = os.path.exists('./face_directory/%s' % name)
-    thread1 = faceload.encodingThread(isexists=isExists)
+    thread1 = faceload.encodingThread(isexists=isExists, name=name)
     thread1.start()
     thread1.join()
     main()
@@ -77,6 +78,10 @@ def do_settings():
     elif key == '3':
         main()
     do_settings()
+
+
+def do_exit():
+    sys.exit()
 
 
 def main():
