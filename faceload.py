@@ -76,7 +76,7 @@ def camera_tracking():
                 face_box = intbox
                 global camera_shot
                 camera_shot = image.copy()
-                cv2.rectangle(image, (startX, startY), (endX, endY),(0, 255, 0), 2)
+                cv2.rectangle(image, (startX, startY), (endX, endY), (0, 255, 0), 2)
             else:
                 thread_flag = False
             lock.release()
@@ -84,7 +84,6 @@ def camera_tracking():
         cv2.imshow('camera', image)
         cv2.waitKey(1)
     capture.release()
-    cv2.destroyAllWindows()
 
 
 def do_encoding():
@@ -166,4 +165,3 @@ def press(key):
         pressed_key = key.char
     except AttributeError:
         return
-
