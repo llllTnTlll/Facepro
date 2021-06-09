@@ -1,6 +1,4 @@
 import cv2
-from typing import List
-
 import cfg_manager
 import os
 import imutils
@@ -14,6 +12,7 @@ thread_flag = False    # 在未检测到人脸是不进行人脸编码
 run_flag = True        # 线程全局运行标志
 face_box = None        # 检测到的人脸位置
 camera_shot = None     # 浅度复制capture捕获内容用于人脸编码
+main_box = None        # 人脸编码所传入的主要人脸位置
 pic_num = 0            # 记录共有多少张照片被捕获
 capture_role = 'no_role'    # 捕获规则
 lock = threading.Lock()
