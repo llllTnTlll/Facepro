@@ -64,9 +64,13 @@ def camera_tracking():
         # 提取人脸ROI
         for i in range(0, detections.shape[2]):
             confidence = detections[0, 0, i, 2]
-            global thread_flag
 
+            global thread_flag
             lock.acquire()
+
+            # 根据box面积将人脸主体与其他人分离
+            # 使用绿色box标记主体，红色box标记路人
+            
             if confidence > 0.4:
                 thread_flag = True
                 box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
@@ -98,7 +102,6 @@ def do_encoding(name):
     # 若按下的按钮为s
     if pressed_key == 's':
         pic_name = time.strftime("%Y%m%d_%H_%M_%S.jpg", time.localtime())
-        print(pic_name)
         cv2.imwrite("./face_directory/%s/%s" % (name, pic_name), camera_shot)    # 暂存到缓存区
         pic_num += 1    # 已捕获照片数量+1
 
