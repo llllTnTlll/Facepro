@@ -1,4 +1,6 @@
 import cv2
+from typing import List
+
 import cfg_manager
 import os
 import imutils
@@ -61,29 +63,52 @@ def camera_tracking():
         detector.setInput(imageBlob)
         detections = detector.forward()
 
-        # 提取人脸ROI
+        # 根据box面积将人脸主体与其他人分离
+        # 使用绿色box标记主体，红色box标记路人
+
+        box_list = []    # box区域列表
+        box_measure = []    # box面积列表
+
+        # 扫描循环
         for i in range(0, detections.shape[2]):
             confidence = detections[0, 0, i, 2]
-
             global thread_flag
-            lock.acquire()
+            global face_box
+            global camera_shot
 
-            # 根据box面积将人脸主体与其他人分离
-            # 使用绿色box标记主体，红色box标记路人
-            
+            lock.acquire()
             if confidence > 0.4:
                 thread_flag = True
                 box = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
                 intbox = box.astype("int")
                 (startX, startY, endX, endY) = intbox
-                global face_box
                 face_box = intbox
-                global camera_shot
                 camera_shot = image.copy()
-                cv2.rectangle(image, (startX, startY), (endX, endY), (0, 255, 0), 2)
+                measure = (endX - startX) * (endY - startY)    # 计算box面积
+                box_measure.append(measure)    # 写入box面积列表
+                box_item = [startX, startY, endX, endY]
+                box_list.append(box_item)    # 写入box区域列表
+
             else:
                 thread_flag = False
             lock.release()
+        try:
+            max_measure = box_measure.index(max(box_measure))
+            print(box_list)
+            print(box_measure)
+        except ValueError:
+            continue
+
+        # 绘制循环
+        for i in range(0, len(box_measure)):
+            startX = box_list[i][0]
+            startY = box_list[i][1]
+            endX = box_list[i][2]
+            endY = box_list[i][3]
+            if i == max_measure:
+                cv2.rectangle(image, (startX, startY), (endX, endY), (0, 255, 0), 2)
+            else:
+                cv2.rectangle(image, (startX, startY), (endX, endY), (0, 0, 255), 2)
         cv2.putText(image, 'captured:' + str(pic_num), (0, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
         cv2.imshow('camera', image)
         cv2.waitKey(1)
