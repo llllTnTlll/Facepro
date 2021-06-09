@@ -122,7 +122,13 @@ class encodingThread(threading.Thread):
     def run(self):
         print("encoding thread start")
         if self.isExists:
-            print('this name is already exists')
+            key = input('\033[4;33mthis name has already exists,would you like to rebuild? (y/n)\033[0m')
+            if key == 'y':
+                # 从硬盘中加载pickle，pop该用户的faceembedding & name
+                # 重新序列化pickle
+                pass
+            elif key == 'n':
+                return
         else:
             os.makedirs(".\\face_directory\\%s" % self.name)
             thread2 = cameraThread()
