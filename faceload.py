@@ -6,14 +6,20 @@ import np
 import threading
 import time
 from pynput.keyboard import Listener
+import pickle_helper
+import train_model
+import face_encoding
 
 pressed_key = None     # 监视键盘输入
 thread_flag = False    # 在未检测到人脸是不进行人脸编码
 run_flag = True        # 线程全局运行标志
 face_box = None        # 检测到的人脸位置
 camera_shot = None     # 浅度复制capture捕获内容用于人脸编码
-main_box = None        # 人脸编码所传入的主要人脸位置
-pic_num = 0            # 记录共有多少张照片被捕获
+main_box = []       # 人脸编码所传入的主要人脸位置
+pic_num = 0         # 记录共有多少张照片被捕获
+data = {}
+knownNames = []
+knownEmbeddings = []
 capture_role = 'no_role'    # 捕获规则
 lock = threading.Lock()
 
@@ -33,18 +39,6 @@ def camera_tracking():
         print(">>>HELP")
         print("  * Confirm that the corresponding model file exists in the specified path")
         flag = 'Detector_Error'
-        return flag
-    print("\033[22;32m>>>success\033[0m")
-    # 从磁盘中加载embedder
-    print("\033[1;33m[INFO] loading face recognizer...\033[0m")
-    try:
-        embedder = cv2.dnn.readNetFromTorch(cfg_manager.read_cfg('Common', 'embedder_path'))
-    except cv2.error:
-        # 返回模型加载失败错误
-        print('\033[1;31m[ERROR]load embedder failed\033[0m')
-        print(">>>HELP")
-        print("  * Confirm that the corresponding model file exists in the specified path")
-        flag = 'Embedder_Error'
         return flag
     print("\033[22;32m>>>success\033[0m")
 
@@ -106,6 +100,8 @@ def camera_tracking():
             endY = box_list[i][3]
             if i == max_measure:
                 cv2.rectangle(image, (startX, startY), (endX, endY), (0, 255, 0), 2)
+                global main_box
+                main_box = [startX, startY, endX, endY]
             else:
                 cv2.rectangle(image, (startX, startY), (endX, endY), (0, 0, 255), 2)
         cv2.putText(image, 'captured:' + str(pic_num), (0, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
@@ -115,6 +111,19 @@ def camera_tracking():
 
 
 def do_encoding(name):
+    # 从磁盘中加载embedder
+    print("\033[1;33m[INFO] loading face recognizer...\033[0m")
+    try:
+        embedder = cv2.dnn.readNetFromTorch(cfg_manager.read_cfg('Common', 'embedder_path'))
+    except cv2.error:
+        # 返回模型加载失败错误
+        print('\033[1;31m[ERROR]load embedder failed\033[0m')
+        print(">>>HELP")
+        print("  * Confirm that the corresponding model file exists in the specified path")
+        flag = 'Embedder_Error'
+        return flag
+    print("\033[22;32m>>>success\033[0m")
+
     lock.acquire()
     print(face_box)
     global camera_shot
@@ -122,18 +131,42 @@ def do_encoding(name):
         return
     lock.release()
     cv2.imshow('camera_shot', camera_shot)
+
     global pic_num
     # 若按下的按钮为s
     if pressed_key == 's':
         pic_name = time.strftime("%Y%m%d_%H_%M_%S.jpg", time.localtime())
         cv2.imwrite("./face_directory/%s/%s" % (name, pic_name), camera_shot)    # 暂存到缓存区
-        pic_num += 1    # 已捕获照片数量+1
+        global main_box
+        startX = main_box[0]
+        startY = main_box[1]
+        endX = main_box[2]
+        endY = main_box[3]
+        # 将ROI区域截出
+        face = camera_shot[startY:endY, startX:endX]
+        (fH, fW) = face.shape[:2]
+        # 剔除较小的人脸
+        if fW < 20 or fH < 20:
+            return
+        # 构造blob
+        # 对人脸进行编码
+        faceBlob = cv2.dnn.blobFromImage(face, 1.0 / 255,
+                                         (96, 96), (0, 0, 0), swapRB=True, crop=False)
+        embedder.setInput(faceBlob)
+        vec = embedder.forward()
 
+        # 将姓名写入列表
+        # 编码存储至列表
+        knownNames.append(name)
+        knownEmbeddings.append(vec.flatten())
+
+        pic_num += 1  # 已捕获照片数量+1
     elif pressed_key == 'p':
         return
     elif pressed_key == 'q':
         global run_flag
         run_flag = False
+
     cv2.waitKey(1)
 
 
@@ -147,10 +180,33 @@ class encodingThread(threading.Thread):
         run_flag = True
 
     def run(self):
+        global run_flag
         print("encoding thread start")
+        global data
+        # 尝试从硬盘中读取pickle
+        try:
+            data = pickle_helper.load_pickle_from_disk(
+                r'C:\Users\ZHIYUAN\PycharmProjects\Facepro\data\pickleHere\embeddings.pickle')
+        # 如果文件不存在
+        # 尝试重新利用已有照片训练并生成pickle文件
+        except FileNotFoundError:
+            flag = face_encoding.do_embedding()
+            if flag == 'FaceNum_Error':
+                # 程序刹车
+                run_flag = False
+            else:
+                # 成功重新生成则再次读取pickle
+                data = pickle_helper.load_pickle_from_disk(
+                    r'C:\Users\ZHIYUAN\PycharmProjects\Facepro\data\pickleHere\embeddings.pickle')
+        finally:
+            global knownNames
+            knownNames = data["names"]
+            global knownEmbeddings
+            knownEmbeddings = data["embeddings"]
         if self.isExists:
             key = input('\033[4;33mthis name has already exists,would you like to rebuild? (y/n)\033[0m')
             if key == 'y':
+                # 删除该用户存储在pickle中的信息
                 # 从硬盘中加载pickle，pop该用户的faceembedding & name
                 # 重新序列化pickle
                 pass
@@ -162,7 +218,6 @@ class encodingThread(threading.Thread):
             thread3 = keyboardThread()
             thread2.start()
             thread3.start()
-            global run_flag
             while run_flag:
                 global thread_flag
                 if thread_flag is True:
@@ -173,6 +228,13 @@ class encodingThread(threading.Thread):
                     else:
                         # 使用全局标识结束所有相关线程
                         run_flag = False
+            if pic_num != 0:
+                train_model.do_modeltrain()
+                data = {"embeddings": knownEmbeddings, "names": knownNames}
+                pickle_helper.write_pickle_to_disk(
+                    r"C:\Users\ZHIYUAN\PycharmProjects\Facepro\data\pickleHere\embeddings.pickle", data)
+            else:
+                print('no pic added')
             cv2.destroyAllWindows()
 
 

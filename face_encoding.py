@@ -1,7 +1,6 @@
 from imutils import paths
 import numpy as np
 import imutils
-import face_alignment
 import cv2
 import os
 import cfg_manager
@@ -58,7 +57,6 @@ def do_embedding():
     for folder_name in folder_names:
         # 获取每个文件夹的路径
         folderPaths.append(os.path.sep.join([directory_path, folder_name]))
-    print(folder_names)
     name_code = -1
     for folderPath in folderPaths:
         imagePaths = list(paths.list_images(folderPath))
@@ -66,7 +64,6 @@ def do_embedding():
         for (i, imagePath) in enumerate(imagePaths):
             print("[INFO] processing image {}/{}".format(i + 1, len(imagePaths)))
             name = folder_names[name_code]
-            print(name)
 
             # 加载图片，保持纵横比更改宽度维600
             # 取得标准化后的图像高度与宽度
@@ -124,6 +121,11 @@ def do_embedding():
                 print("-------------------------------------")
             else:
                 print("\033[1;31m[ERROR]no face detected\033[0m")
+    if len(knownNames) < 2:
+        print(knownNames)
+        print('\033[1;31m[ERROR]classes must be greater than one\033[0m')
+        flag = 'FaceNum_Error'
+
     return flag
 
 
