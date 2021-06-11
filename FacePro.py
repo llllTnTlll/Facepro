@@ -1,9 +1,8 @@
 import face_encoding
 import train_model
 import face_recognition
-import faceload
+import face_load
 import cfg_manager
-import os
 import sys
 
 
@@ -46,13 +45,7 @@ def do_recognition():
 
 
 def do_load():
-    # 向字典添加新的人脸
-    name = input('\033[4;33menter your name first :\033[0m')
-    # 判定人脸画像是否已存在
-    isExists = os.path.exists('./face_directory/%s' % name)
-    thread1 = faceload.encodingThread(isexists=isExists, name=name)
-    thread1.start()
-    thread1.join()
+    face_load.startLoad()
     main()
 
 
