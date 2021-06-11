@@ -12,6 +12,7 @@ import face_encoding
 
 pressed_key = None     # 监视键盘输入
 thread_flag = False    # 在未检测到人脸是不进行人脸编码
+pause_flag = False     # 线程挂起标志
 run_flag = True        # 线程全局运行标志
 face_box = None        # 检测到的人脸位置
 camera_shot = None     # 浅度复制capture捕获内容用于人脸编码
@@ -76,7 +77,8 @@ def camera_tracking():
                 intbox = box.astype("int")
                 (startX, startY, endX, endY) = intbox
                 face_box = intbox
-                camera_shot = image.copy()
+                if not pause_flag:
+                    camera_shot = image.copy()
                 measure = (endX - startX) * (endY - startY)    # 计算box面积
                 box_measure.append(measure)    # 写入box面积列表
                 box_item = [startX, startY, endX, endY]
@@ -87,8 +89,6 @@ def camera_tracking():
             lock.release()
         try:
             max_measure = box_measure.index(max(box_measure))
-            print(box_list)
-            print(box_measure)
         except ValueError:
             continue
 
@@ -124,50 +124,54 @@ def do_encoding(name):
         return flag
     print("\033[22;32m>>>success\033[0m")
 
-    lock.acquire()
-    print(face_box)
-    global camera_shot
-    if camera_shot is None:
-        return
-    lock.release()
-    cv2.imshow('camera_shot', camera_shot)
+    # 当全局线程标志为True时
+    global run_flag
+    while run_flag:
+        # 当在camera thread中检测到人脸时
+        if thread_flag is True:
+            # 当按下的按键不为q时
+            if pressed_key != 'q':
+                global camera_shot
+                global pic_num
+                global pause_flag
+                # 若按下的按钮为s
+                if pressed_key == 's':
+                    pause_flag = False
+                    pic_name = time.strftime("%Y%m%d_%H_%M_%S.jpg", time.localtime())
+                    cv2.imwrite("./face_directory/%s/%s" % (name, pic_name), camera_shot)  # 暂存到缓存区
+                    global main_box
+                    startX = main_box[0]
+                    startY = main_box[1]
+                    endX = main_box[2]
+                    endY = main_box[3]
+                    # 将ROI区域截出
+                    face = camera_shot[startY:endY, startX:endX]
+                    (fH, fW) = face.shape[:2]
+                    # 剔除较小的人脸
+                    if fW < 20 or fH < 20:
+                        continue
+                    # 构造blob
+                    # 对人脸进行编码
+                    faceBlob = cv2.dnn.blobFromImage(face, 1.0 / 255,
+                                                     (96, 96), (0, 0, 0), swapRB=True, crop=False)
+                    embedder.setInput(faceBlob)
+                    vec = embedder.forward()
 
-    global pic_num
-    # 若按下的按钮为s
-    if pressed_key == 's':
-        pic_name = time.strftime("%Y%m%d_%H_%M_%S.jpg", time.localtime())
-        cv2.imwrite("./face_directory/%s/%s" % (name, pic_name), camera_shot)    # 暂存到缓存区
-        global main_box
-        startX = main_box[0]
-        startY = main_box[1]
-        endX = main_box[2]
-        endY = main_box[3]
-        # 将ROI区域截出
-        face = camera_shot[startY:endY, startX:endX]
-        (fH, fW) = face.shape[:2]
-        # 剔除较小的人脸
-        if fW < 20 or fH < 20:
-            return
-        # 构造blob
-        # 对人脸进行编码
-        faceBlob = cv2.dnn.blobFromImage(face, 1.0 / 255,
-                                         (96, 96), (0, 0, 0), swapRB=True, crop=False)
-        embedder.setInput(faceBlob)
-        vec = embedder.forward()
+                    # 将姓名写入列表
+                    # 编码存储至列表
+                    knownNames.append(name)
+                    knownEmbeddings.append(vec.flatten())
 
-        # 将姓名写入列表
-        # 编码存储至列表
-        knownNames.append(name)
-        knownEmbeddings.append(vec.flatten())
-
-        pic_num += 1  # 已捕获照片数量+1
-    elif pressed_key == 'p':
-        return
-    elif pressed_key == 'q':
-        global run_flag
-        run_flag = False
-
-    cv2.waitKey(1)
+                    pic_num += 1  # 已捕获照片数量+1
+                elif pressed_key == 'p':
+                    pause_flag = True
+                if camera_shot is None:
+                    continue
+                cv2.imshow('camera_shot', camera_shot)
+                cv2.waitKey(1)
+                time.sleep(1)
+            else:
+                run_flag = False
 
 
 class encodingThread(threading.Thread):
@@ -218,16 +222,8 @@ class encodingThread(threading.Thread):
             thread3 = keyboardThread()
             thread2.start()
             thread3.start()
-            while run_flag:
-                global thread_flag
-                if thread_flag is True:
-                    if pressed_key != 'q':
-                        do_encoding(self.name)
-                        print(pressed_key)
-                        time.sleep(1)
-                    else:
-                        # 使用全局标识结束所有相关线程
-                        run_flag = False
+            do_encoding(self.name)
+
             if pic_num != 0:
                 train_model.do_modeltrain()
                 data = {"embeddings": knownEmbeddings, "names": knownNames}
