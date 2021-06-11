@@ -28,7 +28,9 @@ def startLoad():
     if isExists:
         key = input('name has already exists, would you like to cover it?(y/n) :')
         if key == 'n':
-            FacePro.main()
+            return
+    else:
+        os.makedirs('./face_directory/%s' % name)
     global run_flag
     run_flag = True
     kthread = keyboardThread()
@@ -40,7 +42,6 @@ def startLoad():
     kthread.join()
     cthread.join()
     ethread.join()
-    print('all finished')
 
 
 # 键盘监听线程
@@ -67,8 +68,6 @@ def on_press(key):
 
 
 def on_release(key):
-    print('{0} release'.format(
-        key))
     if key == Key.esc:
         # Stop listener
         return False
@@ -163,9 +162,10 @@ def do_encoding(name):
                 knownEmbeddings.append(vec.flatten())
 
                 pic_num += 1  # 已捕获照片数量+1
-        # 按下p暂停编码
-        elif pressed_key == 'p':
+        # 按下任意键暂停编码
+        else:
             continue
+
         time.sleep(1)
     if pic_num != 0:
         data = {"embeddings": knownEmbeddings, "names": knownNames}
@@ -173,8 +173,7 @@ def do_encoding(name):
             r"C:\Users\ZHIYUAN\PycharmProjects\Facepro\data\pickleHere\embeddings.pickle", data)
         train_model.do_modeltrain()
     else:
-        print('no pic added')
-    print('encodingThread Finished')
+        print('[INFO] no pic added')
 
 
 def camera_tracking():
@@ -253,4 +252,3 @@ def camera_tracking():
         cv2.waitKey(1)
     capture.release()
     cv2.destroyAllWindows()
-    print('cameraThread Finished')

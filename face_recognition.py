@@ -1,11 +1,13 @@
+import threading
 import numpy as np
-import argparse
 import imutils
-import pickle_helper
+from pynput.keyboard import Listener, Key
 import cv2
 import os
 import cfg_manager
 import pickle
+
+run_flag = True
 
 
 def do_recognition():
@@ -32,7 +34,11 @@ def do_recognition():
     # 从摄像头获取图像
     # 转换每张图的宽度为600，保持其纵横比并读取高度
     capture = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-    while 1:
+
+    # 启动键盘监控线程
+    kthread = keyboardThread()
+    kthread.start()
+    while run_flag:
         ret, frame = capture.read()
         if ret is False:
             break
@@ -84,6 +90,35 @@ def do_recognition():
                             cv2.FONT_HERSHEY_SIMPLEX, 0.45, (0, 255, 0), 2)
                 cv2.imshow('', image)
                 cv2.waitKey(1)
+    capture.release()
+    cv2.destroyAllWindows()
+    kthread.join()
+
+
+# 键盘监听线程
+class keyboardThread(threading.Thread):
+    def __init__(self):
+        super().__init__()
+
+    def run(self):
+        with Listener(on_press=on_press, on_release=on_release) as listener:
+            listener.join()
+
+
+def on_press(key):
+    global run_flag
+    try:
+        # 在按下q时将线程标志修改为False
+        if key == Key.esc:
+            run_flag = False
+    except AttributeError:
+        return
+
+
+def on_release(key):
+    if key == Key.esc:
+        # Stop listener
+        return False
 
 
 if __name__ == '__main__':
