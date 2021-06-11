@@ -1,9 +1,8 @@
 import face_encoding
 import train_model
 import face_recognition
-import faceload
+import face_load
 import cfg_manager
-import os
 import sys
 
 
@@ -26,6 +25,7 @@ def function_choose(num):
         '2': do_load,
         '3': do_train,
         '4': do_settings,
+        '5': do_exit,
     }
 
     numbers.get(num, default)()
@@ -45,11 +45,7 @@ def do_recognition():
 
 
 def do_load():
-    # 向字典添加新的人脸
-    name = input('\033[4;33menter your name first :\033[0m')
-    isExists = os.path.exists('./face_directory/%s' % name)
-    thread1 = faceload.encodingThread(isexists=isExists)
-    thread1.start()
+    face_load.startLoad()
     main()
 
 
@@ -75,6 +71,10 @@ def do_settings():
     elif key == '3':
         main()
     do_settings()
+
+
+def do_exit():
+    sys.exit()
 
 
 def main():
