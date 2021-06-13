@@ -3,7 +3,7 @@ import train_model
 import face_recognition
 import face_load
 import cfg_manager
-import pickle_helper
+import user_management
 import sys
 
 
@@ -77,22 +77,8 @@ def do_settings():
 
 
 def do_facemanage():
-    data = pickle_helper.load_pickle_from_disk(r'C:\Users\ZHIYUAN\PycharmProjects\Facepro\data\pickleHere\embeddings.pickle')
-    names = data["names"]
-    name_list = []
-    for name in names:
-        if name not in name_list:
-            name_list.append(name)
-    print('|  id  |      name      |')
-    for i in range(len(name_list)):
-        print(' %i       %s' % (i, name_list[i]))
-    flag = True
-    while flag:
-        try:
-            id = int(input('\033[4;33menter an id :\033[0m'))
-            flag = False
-        except ValueError:
-            print('no such id please enter again ')
+    user_management.do_management()
+    main()
 
 
 def do_exit():
