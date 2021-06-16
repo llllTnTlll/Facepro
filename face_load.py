@@ -9,7 +9,6 @@ from pynput.keyboard import Listener, Key
 import pickle_helper
 import train_model
 import face_encoding
-import FacePro
 
 run_flag: bool = False  # 线程全局运行标志
 camera_shot = None  # 来自摄像头frame的浅度复制

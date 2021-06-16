@@ -99,6 +99,8 @@ def do_recognition():
 class keyboardThread(threading.Thread):
     def __init__(self):
         super().__init__()
+        global run_flag
+        run_flag = True
 
     def run(self):
         with Listener(on_press=on_press, on_release=on_release) as listener:

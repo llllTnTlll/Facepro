@@ -3,6 +3,7 @@ import train_model
 import face_recognition
 import face_load
 import cfg_manager
+import user_management
 import sys
 
 
@@ -10,10 +11,11 @@ def show_menu():
     # 展示菜单
     print('\033[1;32m=======================Function_Menu========================\033[0m')
     print('press 1 for : FaceRecognition(SVM)')
-    print('press 2 for : LoadNewFace')
-    print('press 3 for : FaceEncoding & TrainModel')
-    print('press 4 for : Settings')
-    print('press 5 for : Exit')
+    print('press 2 for : FaceEncoding & TrainModel')
+    print('press 3 for : LoadNewFace')
+    print('press 4 for : UserManagement')
+    print('press 5 for : Settings')
+    print('press 6 for : Exit')
     key = input('\033[4;33menter num and press enter : \033[0m')
     function_choose(key)
 
@@ -22,10 +24,11 @@ def function_choose(num):
     # 功能选择
     numbers = {
         '1': do_recognition,
-        '2': do_load,
-        '3': do_train,
-        '4': do_settings,
-        '5': do_exit,
+        '2': do_train,
+        '3': do_load,
+        '4': do_facemanage,
+        '5': do_settings,
+        '6': do_exit,
     }
 
     numbers.get(num, default)()
@@ -71,6 +74,11 @@ def do_settings():
     elif key == '3':
         main()
     do_settings()
+
+
+def do_facemanage():
+    user_management.do_management()
+    main()
 
 
 def do_exit():
