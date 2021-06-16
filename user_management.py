@@ -97,6 +97,7 @@ def delete():
     data = {"embeddings": knownEmbeddings, "names": knownNames}
     pickle_helper.write_pickle_to_disk(r"C:\Users\ZHIYUAN\PycharmProjects\Facepro\data\pickleHere\embeddings.pickle",
                                        data)
+
     delDir = os.path.sep.join([directory_path, selected])
     # 彻底清理本地照片及目录
     for root, dirs, files in os.walk(delDir, topdown=False):
