@@ -71,10 +71,17 @@ def do_embedding():
             image = imutils.resize(image, width=600)
             (h, w) = image.shape[:2]
 
+            # 取得图片的RGB均值
+            resized = cv2.resize(image, (300, 300))
+            r_mean = np.mean(resized[:, :, 0])
+            g_mean = np.mean(resized[:, :, 1])
+            b_mean = np.mean(resized[:, :, 2])
+            rgb_means = (r_mean, g_mean, b_mean)
+
             # 对整张图片构建blob
             imageBlob = cv2.dnn.blobFromImage(
-                cv2.resize(image, (300, 300)), 1.0, (300, 300),
-                (104.0, 177.0, 123.0), swapRB=False, crop=False)
+                resized, 1.0, (300, 300),
+                rgb_means, swapRB=False, crop=False)
 
             # 输入深度学习模型并取得预测结果
             detector.setInput(imageBlob)
@@ -91,7 +98,6 @@ def do_embedding():
                     # 取得ROI区域
                     roi = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
                     (startX, startY, endX, endY) = roi.astype("int")
-                    intROI = [startX, startY, endX, endY]
 
                     # 将ROI区域截出
                     face = image[startY:endY, startX:endX]

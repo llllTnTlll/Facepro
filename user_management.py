@@ -5,6 +5,7 @@ import os
 
 selected = ''  # 已选中用户名称
 directory_path = ''
+folder_names = None
 
 
 def do_management():
@@ -38,6 +39,7 @@ def do_management():
             print('index out of range')
     try:
         global directory_path
+        global folder_names
         directory_path = cfg_manager.read_cfg('Common', 'face_directory')
         folder_names = os.listdir(os.path.sep.join([directory_path, selected]))
         lastchange = 0
@@ -66,6 +68,7 @@ def function_choose(num):
     numbers = {
         '1': delete,
         '2': backup,
+
     }
     numbers.get(num, default)()
 
@@ -108,6 +111,17 @@ def delete():
     os.removedirs(delDir)
     # 重新训练模型
     train_model.do_modeltrain()
+
+
+def data_augmentation():
+    print("\033[1;33m[INFO] Data enhancement may increase the number of photos \033[0m")
+    flag = True
+    while flag:
+        key = input('\033[4;33mcontinue ?(y/n) :\033[0m')
+        if key == 'y':
+            flag = False
+        if key == 'n':
+            return
 
 
 def backup():
