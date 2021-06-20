@@ -95,5 +95,3 @@ def blurred(img):
     output.append(gaussian)
     output.append(blur)
 
-
-do_enhanement('zhiyuan')
