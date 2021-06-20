@@ -2,7 +2,7 @@ import cv2
 import cfg_manager
 import os
 import imutils
-import np
+import numpy as np
 import threading
 import time
 from pynput.keyboard import Listener, Key
@@ -109,10 +109,11 @@ def do_encoding(name):
         return flag
     print("\033[22;32m>>>success\033[0m")
 
+    # 获取编码pickle路径
+    pickledic = pickle_helper.get_path()
     # 尝试从硬盘中读取pickle
     try:
-        data = pickle_helper.load_pickle_from_disk(
-            r'C:\Users\ZHIYUAN\PycharmProjects\Facepro\data\pickleHere\embeddings.pickle')
+        data = pickle_helper.load_pickle_from_disk(pickledic['embedding'])
         knownNames = data["names"]  # pickle中已有的name
         knownEmbeddings = data["embeddings"]  # pickle中以有的人脸编码
     # 捕获异常
@@ -124,8 +125,7 @@ def do_encoding(name):
             run_flag = False
         else:
             # 成功重新生成则再次读取pickle
-            data = pickle_helper.load_pickle_from_disk(
-                r'C:\Users\ZHIYUAN\PycharmProjects\Facepro\data\pickleHere\embeddings.pickle')
+            data = pickle_helper.load_pickle_from_disk(pickledic['embedding'])
             knownNames = data["names"]  # pickle中已有的name
             knownEmbeddings = data["embeddings"]  # pickle中以有的人脸编码
 
@@ -137,7 +137,7 @@ def do_encoding(name):
             # 说明camera_shot中存在人脸需要执行编码
             if len(main_box) != 0:
                 pic_name = time.strftime("%Y%m%d_%H_%M_%S.jpg", time.localtime())
-                cv2.imwrite("./face_directory/%s/%s" % (name, pic_name), camera_shot)  # 暂存到缓存区
+                cv2.imwrite("./face_directory/%s/%s" % (name, pic_name), camera_shot)  # 存至硬盘
                 startX = main_box[0]
                 startY = main_box[1]
                 endX = main_box[2]
@@ -148,10 +148,17 @@ def do_encoding(name):
                 # 剔除较小的人脸
                 if fW < 20 or fH < 20:
                     continue
+
+                # 取得图片RGB均值
+                r_mean = np.mean(face[:, :, 0])
+                g_mean = np.mean(face[:, :, 1])
+                b_mean = np.mean(face[:, :, 2])
+                rgb_means = (r_mean, g_mean, b_mean)
+
                 # 构造blob
                 # 对人脸进行编码
                 faceBlob = cv2.dnn.blobFromImage(face, 1.0 / 255,
-                                                 (96, 96), (0, 0, 0), swapRB=True, crop=False)
+                                                 (96, 96), rgb_means, swapRB=True, crop=False)
                 embedder.setInput(faceBlob)
                 vec = embedder.forward()
 
@@ -168,10 +175,10 @@ def do_encoding(name):
         time.sleep(1)
     if pic_num != 0:
         data = {"embeddings": knownEmbeddings, "names": knownNames}
-        pickle_helper.write_pickle_to_disk(
-            r"C:\Users\ZHIYUAN\PycharmProjects\Facepro\data\pickleHere\embeddings.pickle", data)
+        pickle_helper.write_pickle_to_disk(pickledic['embedding'], data)
         train_model.do_modeltrain()
     else:
+        os.removedirs('./face_directory/%s' % name)
         print('[INFO] no pic added')
 
 
@@ -200,10 +207,18 @@ def camera_tracking():
             break
         image = imutils.resize(frame, width=600)
         (h, w) = image.shape[:2]
+
+        # 取得图片的RGB均值
+        resized = cv2.resize(image, (300, 300))
+        r_mean = np.mean(resized[:, :, 0])
+        g_mean = np.mean(resized[:, :, 1])
+        b_mean = np.mean(resized[:, :, 2])
+        rgb_means = (r_mean, g_mean, b_mean)
+
         # 构建Blob
         imageBlob = cv2.dnn.blobFromImage(
-            cv2.resize(image, (300, 300)), 1.0, (300, 300),
-            (104.0, 177.0, 123.0), swapRB=False, crop=False)
+            resized, 1.0, (300, 300),
+            rgb_means, swapRB=False, crop=False)
         detector.setInput(imageBlob)
         detections = detector.forward()
 
