@@ -5,6 +5,7 @@ import cv2
 import os
 import cfg_manager
 import pickle_helper
+import oshelper
 
 
 def do_embedding():
@@ -53,17 +54,28 @@ def do_embedding():
     knownNames = []
     folderPaths = []
     total = 0
+    nameNum = 0
 
     for folder_name in folder_names:
         # 获取每个文件夹的路径
         folderPaths.append(os.path.sep.join([directory_path, folder_name]))
+        nameNum += 1
     name_code = -1
     for folderPath in folderPaths:
         imagePaths = list(paths.list_images(folderPath))
         name_code += 1
+        # 获取到当前处理的文件夹名
+        name = folder_names[name_code]
+        # 判断此用户是否启用了数据增强
+        isExists = os.path.exists('./data/enhanced/%s' % name)
+        # 若启用了数据增强
+        # 将增强后的文件路径一并写入代编码路径中
+        if isExists:
+            enhancedPaths = oshelper.dirwalker('./data/enhanced/%s' % name, ('jpg',))
+            for enhancedPath in enhancedPaths:
+                imagePaths.append(enhancedPath)
         for (i, imagePath) in enumerate(imagePaths):
             print("[INFO] processing image {}/{}".format(i + 1, len(imagePaths)))
-            name = folder_names[name_code]
 
             # 加载图片，保持纵横比更改宽度维600
             # 取得标准化后的图像高度与宽度
@@ -93,7 +105,7 @@ def do_embedding():
                 confidence = detections[0, 0, i, 2]
 
                 # 如果置信度大于设定值
-                if confidence > float(cfg_manager.read_cfg('FaceEmbeddings', 'confidence')):
+                if confidence >= float(cfg_manager.read_cfg('FaceEmbeddings', 'confidence')):
 
                     # 取得ROI区域
                     roi = detections[0, 0, i, 3:7] * np.array([w, h, w, h])
@@ -120,14 +132,16 @@ def do_embedding():
                     knownEmbeddings.append(vec.flatten())
                     total += 1
 
-                # 将编码写入embeddings.pickle
-                print("[INFO] serializing {} encodings...".format(total))
-                data = {"embeddings": knownEmbeddings, "names": knownNames}
-                pickle_helper.write_pickle_to_disk(r"C:\Users\ZHIYUAN\PycharmProjects\Facepro\data\pickleHere\embeddings.pickle", data)
-                print("-------------------------------------")
             else:
                 print("\033[1;31m[ERROR]no face detected\033[0m")
-    if len(knownNames) < 2:
+
+    # 将编码写入pickle
+    print("[INFO] serializing {} encodings...".format(total))
+    data = {"embeddings": knownEmbeddings, "names": knownNames}
+    pickle_helper.write_pickle_to_disk(pickle_helper.get_path()['embedding'], data)
+    print("-------------------------------------")
+
+    if nameNum < 2:
         print(knownNames)
         print('\033[1;31m[ERROR]classes must be greater than one\033[0m')
         flag = 'FaceNum_Error'

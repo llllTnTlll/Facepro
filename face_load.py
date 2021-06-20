@@ -109,10 +109,11 @@ def do_encoding(name):
         return flag
     print("\033[22;32m>>>success\033[0m")
 
+    # 获取编码pickle路径
+    pickledic = pickle_helper.get_path()
     # 尝试从硬盘中读取pickle
     try:
-        data = pickle_helper.load_pickle_from_disk(
-            r'C:\Users\ZHIYUAN\PycharmProjects\Facepro\data\pickleHere\embeddings.pickle')
+        data = pickle_helper.load_pickle_from_disk(pickledic['embedding'])
         knownNames = data["names"]  # pickle中已有的name
         knownEmbeddings = data["embeddings"]  # pickle中以有的人脸编码
     # 捕获异常
@@ -124,8 +125,7 @@ def do_encoding(name):
             run_flag = False
         else:
             # 成功重新生成则再次读取pickle
-            data = pickle_helper.load_pickle_from_disk(
-                r'C:\Users\ZHIYUAN\PycharmProjects\Facepro\data\pickleHere\embeddings.pickle')
+            data = pickle_helper.load_pickle_from_disk(pickledic['embedding'])
             knownNames = data["names"]  # pickle中已有的name
             knownEmbeddings = data["embeddings"]  # pickle中以有的人脸编码
 
@@ -137,7 +137,7 @@ def do_encoding(name):
             # 说明camera_shot中存在人脸需要执行编码
             if len(main_box) != 0:
                 pic_name = time.strftime("%Y%m%d_%H_%M_%S.jpg", time.localtime())
-                cv2.imwrite("./face_directory/%s/%s" % (name, pic_name), camera_shot)  # 暂存到缓存区
+                cv2.imwrite("./face_directory/%s/%s" % (name, pic_name), camera_shot)  # 存至硬盘
                 startX = main_box[0]
                 startY = main_box[1]
                 endX = main_box[2]
@@ -175,8 +175,7 @@ def do_encoding(name):
         time.sleep(1)
     if pic_num != 0:
         data = {"embeddings": knownEmbeddings, "names": knownNames}
-        pickle_helper.write_pickle_to_disk(
-            r"C:\Users\ZHIYUAN\PycharmProjects\Facepro\data\pickleHere\embeddings.pickle", data)
+        pickle_helper.write_pickle_to_disk(pickledic['embedding'], data)
         train_model.do_modeltrain()
     else:
         os.removedirs('./face_directory/%s' % name)

@@ -1,6 +1,7 @@
 import pickle_helper
 import train_model
 import cfg_manager
+import oshelper
 import os
 
 selected = ''  # 已选中用户名称
@@ -103,12 +104,7 @@ def delete():
 
     delDir = os.path.sep.join([directory_path, selected])
     # 彻底清理本地照片及目录
-    for root, dirs, files in os.walk(delDir, topdown=False):
-        for name in files:
-            os.remove(os.path.join(root, name))
-        for name in dirs:
-            os.rmdir(os.path.join(root, name))
-    os.removedirs(delDir)
+    oshelper.deleteAll(delDir, True)
     # 重新训练模型
     train_model.do_modeltrain()
 
