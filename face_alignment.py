@@ -2,12 +2,15 @@ import cv2
 import cfg_manager
 import operator
 from functools import reduce
+import tool_interface
 import np
 
 
 def do_alignment(image):
+
     # 加载Haar分类器
-    glasses_eyes_classifier = cv2.CascadeClassifier(cfg_manager.read_cfg('FaceAlignment', 'glasseseyes_classifier_path'))
+    glasses_eyes_classifier = cv2.CascadeClassifier(
+        cfg_manager.read_cfg('FaceAlignment', 'glasseseyes_classifier_path'))
     lefteye_classifier = cv2.CascadeClassifier(cfg_manager.read_cfg('FaceAlignment', 'lefteye_classifier_path'))
     righteye_classifier = cv2.CascadeClassifier(cfg_manager.read_cfg('FaceAlignment', 'righteye_classifier_path'))
     # 对传入照片进行浅度复制
@@ -18,7 +21,8 @@ def do_alignment(image):
     # 获取人脸图像尺寸
     (fH, fW) = img.shape[:2]
     # 裁剪人脸上半部分
-    eye_region = img[0:int(fH/2.1), 0:int(fW)]
+    eye_region = img[0:int(fH / 2.1), 0:int(fW)]
+
     # 首先使用Haar分类器对两只眼睛分别进行定位
     lefteye = lefteye_classifier.detectMultiScale(eye_region, 1.2, 10, cv2.CASCADE_SCALE_IMAGE)
     righteye = righteye_classifier.detectMultiScale(eye_region, 1.2, 10, cv2.CASCADE_SCALE_IMAGE)
@@ -37,16 +41,17 @@ def do_alignment(image):
                 x1, y1, w1, h1 = _faceRect_eye
                 cv2.rectangle(eye_region, (int(x1), int(y1)), (int(x1) + int(w1), int(y1) + int(h1)), (0, 255, 0), 2)
                 # 标出人眼中心点
-                eye_region_center = (int(x1)+int(w1/2), int(y1)+int(h1/2))
+                eye_region_center = (int(x1) + int(w1 / 2), int(y1) + int(h1 / 2))
                 cv2.circle(eye_region, eye_region_center, radius=3, color=(0, 0, 255))
                 for num in eye_region_center:
                     eye_location.append(num)
             if len(eye_location) == 4:
-                cv2.line(eye_region, (eye_location[0], eye_location[1]), (eye_location[2], eye_location[3]), (0, 0, 255), thickness=3)
-                k = (eye_location[3]-eye_location[1])/(eye_location[2]-eye_location[0])
+                cv2.line(eye_region, (eye_location[0], eye_location[1]), (eye_location[2], eye_location[3]),
+                         (0, 0, 255), thickness=3)
+                k = (eye_location[3] - eye_location[1]) / (eye_location[2] - eye_location[0])
 
             cv2.imshow('eye', eye_region)
-            cv2.waitKey(10)
+            cv2.waitKey()
             return
 
         else:
@@ -79,7 +84,7 @@ def do_alignment(image):
                             cv2.rectangle(eye_region, (int(x1), int(y1)), (int(x1) + int(w1), int(y1) + int(h1)),
                                           (0, 255, 0), 2)
                             cv2.imshow('eye', eye_region)
-                            cv2.waitKey(10)
+                            cv2.waitKey()
                         return
                     else:
                         print('face_alignment failed')
@@ -87,7 +92,7 @@ def do_alignment(image):
                 # 若只检测到一只眼
                 elif len(glasses_eyes) == 1:
                     eyes = [faceRect_eye, glasses_eyes]
-                    difference = reduce(operator.add, eyes[0]-eyes[1])
+                    difference = reduce(operator.add, eyes[0] - eyes[1])
                     var = np.var(difference)
                     if var > 200:
                         for eye in eyes:
@@ -96,7 +101,7 @@ def do_alignment(image):
                             cv2.rectangle(eye_region, (int(x1), int(y1)), (int(x1) + int(w1), int(y1) + int(h1)),
                                           (0, 255, 0), 2)
                             cv2.imshow('eye', eye_region)
-                            cv2.waitKey(10)
+                            cv2.waitKey()
                         return
                     else:
                         print('face_alignment failed')
@@ -104,3 +109,10 @@ def do_alignment(image):
                 print('face_alignment failed')
     else:
         print('face_alignment failed')
+
+
+
+i = cv2.imread(r'C:\Users\ZHIYUAN\PycharmProjects\Facepro\face_directory\shaoyu\20210501_16_26_03.jpg')
+flag, face = tool_interface.photo_sticker(i)
+if flag:
+    do_alignment(face)
